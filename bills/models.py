@@ -5,7 +5,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 
-def cycle_date(billing_cycle):
+def cycle_date(billing_cycle=None):
     if not billing_cycle:
         now = timezone.now()
         billing_cycle = f"{now.month:02}/{now.year}"
@@ -17,18 +17,49 @@ def cycle_date(billing_cycle):
     
     return start_date, end_date
 
+class CallRecord(models.Model):
+    STARTING_CALL = "S"
+    END_CALL = "E"
+    CALL_TYPE = ((STARTING_CALL, "Starting Call"), (END_CALL, "End Call"))
+    record_type = models.CharField(
+        "Record Type", max_length=1, choices=CALL_TYPE, default=STARTING_CALL
+    )
+    timestamp = models.DateTimeField("Record Timestamp", default=timezone.now)
+    call_id = models.IntegerField("Call ID")
+    source = models.CharField(
+        "Origin Phone Number", max_length=9, blank=False
+    )
+    destination = models.CharField(
+        "Destination Phone Number", max_length=9, blank=False
+    )
+    bill = models.ForeignKey(
+        "Bill", on_delete=models.DO_NOTHING, related_name="records", null=True)
+
+    class Meta:
+        unique_together = ("call_id", "record_type", "source")
+
 
 class BillManager(models.Manager):
+
+    def get_or_create(self, subscriber, period, standing_charge, minute_charge):
+        try:
+            bill = self.get(subscriber=subscriber, period=period)
+        except Bill.DoesNotExist:
+            bill = self.create_calculated_bill(
+                subscriber, period, standing_charge, minute_charge)
+
+        return bill
+
     @transaction.atomic
-    def create_bill(self, subscriber, records, period, standing_charge, minute_charge):
+    def create_calculated_bill(self, subscriber, period, standing_charge, minute_charge):
         bill = self.create(
             subscriber=subscriber, period=period, standing_charge=standing_charge,
             minute_charge=minute_charge)
-        for start_record, end_record in records:
-            start_record.bill = bill
-            start_record.save()
-            end_record.bill = bill
-            end_record.save()
+        CallRecord.objects.filter(
+            source=subscriber, timestamp__range=cycle_date(period)
+        ).update(bill=bill)
+        bill.calculate()
+
         return bill
 
 
@@ -45,9 +76,7 @@ class Bill(models.Model):
 
     @property
     def is_calculated(self):
-        if self.total_price:
-            return True
-        return False
+        return True if self.total_price else False
 
     def _charge_minutes(self, start_date, end_date):
         charged_minutes = 0
@@ -66,7 +95,7 @@ class Bill(models.Model):
             start_record.timestamp, end_record.timestamp)
         return self.standing_charge + Decimal(billed_minutes * self.minute_charge)
 
-    def _get_bill_records(self):
+    def _format_bill_records(self):
         start_records = {}
         end_records = {}
         records = []
@@ -86,53 +115,10 @@ class Bill(models.Model):
     def calculate(self):
         self.description = ""
         self.total_price = Decimal("0.0")
-        for start_record, end_record in self._get_bill_records():
+        for start_record, end_record in self._format_bill_records():
             charged_value = self._charge_call(start_record, end_record)
-            self.description += (f"{start_record.timestamp}. From {start_record.source} to "
-                                 f"{start_record.destination} billed: {charged_value:.2f}\n")
+            self.description += (
+                f"{start_record.timestamp}. From {start_record.source} to "
+                f"{start_record.destination} billed: {charged_value:.2f}\n")
             self.total_price += charged_value
         self.save()
-
-
-class CallRecordManager(models.Manager):
-    def get_bill_records(self, subscriber, billing_cycle=None):
-        call_records = self.filter(
-            source=subscriber, timestamp__range=cycle_date(billing_cycle)
-        )
-        start_calls = {}
-        end_calls = {}
-        for record in call_records:
-            if record.record_type == "S":
-                start_calls[record.call_id] = record
-            else:
-                end_calls[record.call_id] = record
-        records = []
-        for end_call_id in end_calls:
-            start_record = start_calls.get(end_call_id, None)
-            if not start_record:
-                continue
-            records.append((start_record, end_calls[end_call_id]))
-        return records
-
-
-class CallRecord(models.Model):
-    objects = CallRecordManager()
-    STARTING_CALL = "S"
-    END_CALL = "E"
-    CALL_TYPE = ((STARTING_CALL, "Starting Call"), (END_CALL, "End Call"))
-    record_type = models.CharField(
-        "Record Type", max_length=1, choices=CALL_TYPE, default=STARTING_CALL
-    )
-    timestamp = models.DateTimeField("Record Timestamp", default=timezone.now)
-    call_id = models.IntegerField("Call ID")
-    source = models.CharField(
-        "Origin Phone Number", max_length=9, blank=False
-    )
-    destination = models.CharField(
-        "Destination Phone Number", max_length=9, blank=False
-    )
-    bill = models.ForeignKey(
-        Bill, on_delete=models.DO_NOTHING, related_name="records", null=True)
-
-    class Meta:
-        unique_together = ("call_id", "record_type", "source")

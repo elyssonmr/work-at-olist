@@ -8,3 +8,5 @@
 .env
 tmp
 *.sqlite3
+.coverage
+.pytest_cache
