@@ -50,6 +50,47 @@ class CallRecordCreateAPITestCase(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertJSONEqual(response.content, expected)
 
+    def test_create_record_invalid_len_source(self):
+        record_data = {
+            "record_type": "E",
+            "call_id": 1,
+            "source": "12345",
+            "destination": "12345677"
+        }
+        expected = {
+            "source": ['Must be a phone number with 8 or 9 digits.']
+        }
+
+        response = self.client.post(
+            '/api/callRecords',
+            data=json.dumps(record_data),
+            content_type='application/json'
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertJSONEqual(response.content, expected)
+
+    def test_create_record_invalid_type_source(self):
+        record_data = {
+            "record_type": "E",
+            "call_id": 1,
+            "source": "abcdferg",
+            "destination": "12345677"
+        }
+        expected = {
+            "source": ['Must be digits.']
+        }
+
+        response = self.client.post(
+            '/api/callRecords',
+            data=json.dumps(record_data),
+            content_type='application/json'
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertJSONEqual(response.content, expected)
+
+
 
 class BillRetrieveTestCase(TestCase):
     def setUp(self):
