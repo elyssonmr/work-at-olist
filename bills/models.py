@@ -122,3 +122,18 @@ class Bill(models.Model):
                 f"{start_record.destination} billed: {charged_value:.2f}\n")
             self.total_price += charged_value
         self.save()
+
+
+class Charge(models.Model):
+    STANDING_CHARGE = "S"
+    MINUTE_CHARGE = "M"
+    CHARGE_TYPE = (
+        (STANDING_CHARGE, "Standing Charge"),
+        (MINUTE_CHARGE, "Minute Charge")
+    )
+    charge_type = models.CharField(
+        "Charge Type", max_length=1, choices=CHARGE_TYPE,
+        default=STANDING_CHARGE
+    )
+
+    value = models.DecimalField("Charge Value", max_digits=4, decimal_places=2)
