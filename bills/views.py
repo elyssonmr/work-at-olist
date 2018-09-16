@@ -7,9 +7,6 @@ from bills.models import Bill, Charge
 class CallRecordCreateAPIView(CreateAPIView):
     serializer_class = CallRecordModelSerializer
 
-    def get_extra_actions(self):
-        return []
-
 
 class BillRetrieverView(RetrieveAPIView):
     serializer_class = BillModelSerializer
