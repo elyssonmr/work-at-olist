@@ -1,6 +1,6 @@
 # Work at Olist
 
-You can access the api in: [https://phonecall-elyssonmr.herokuapp.com/api/bills/2018/09/12345678](https://phonecall-elyssonmr.herokuapp.com/api/bills/2018/09/12345678)
+You can access the api in: [https://phonecall-elyssonmr.herokuapp.com/api/](https://phonecall-elyssonmr.herokuapp.com/api/)
 
 # Description
 Rest API to save call records and git its bills.
@@ -15,7 +15,7 @@ Rest API to save call records and git its bills.
 To test you just need to run `pytest` command or acess the API using rest clients such [Postman](https://www.getpostman.com/).
 
 # What was used to develop this project
-This project was developed using Python 3, Django 2, Visual Studio Code and Linux.
+This project was developed using Python 3, Django 2, Django Rest Framework, Visual Studio Code and Linux.
 
 # API documentation
 
