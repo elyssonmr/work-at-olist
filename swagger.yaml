@@ -1,0 +1,158 @@
+swagger: "2.0"
+info:
+  description: "Work at Olist call records API"
+  version: "1.0.0"
+  title: "Call Records"
+  contact:
+    email: "elyssonmr@gmail.com"
+host: "phonecall-elyssonmr.herokuapp.com"
+basePath: "/api"
+tags:
+- name: "callRecords"
+  description: "Saves the call records"
+- name: "bills"
+  description: "Retrieve the calculated bill"
+schemes:
+- "https"
+- "http"
+paths:
+  /callRecords:
+    post:
+      tags:
+      - "callRecords"
+      summary: "Add a new call record"
+      description: "Add a new starting or ending call record"
+      operationId: "addCallRecords"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Stating or ending call record object"
+        required: true
+        schema:
+          $ref: "#/definitions/CallRecord"
+      responses:
+        405:
+          description: "Invalid input"
+        200:
+          description: "The created call record"
+          schema:
+            $ref: '#/definitions/CallRecordResponse'
+  /bills/{year}/{month}/{subscriber}:
+    get:
+      tags:
+      - "bills"
+      summary: "Gets a calculated bill"
+      description: "Retrieve a calculated bill from the given period of a subscriber"
+      operationId: "retrieveCalculatedBill"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+        - in: "path"
+          name: year
+          required: true
+          type: integer
+          minLength: 4
+          maxLength: 4
+          description: "Bill's Period year"
+        - in: path
+          name: month
+          required: true
+          type: integer
+          minLength: 2
+          maxLength: 2
+          description: "Bill's period month"
+        - in: path
+          name: subscriber
+          required: true
+          type: string
+          minLength: 8
+          maxLength: 9
+          description: "Bill's subscriber"
+      responses:
+        405:
+          description: "Invalid input"
+        200:
+          description: "The calculated bill"
+          schema:
+            $ref: '#/definitions/Bill'
+definitions:
+  CallRecord:
+    type: "object"
+    required:
+    - "record_type"
+    - "call_id"
+    - "source"
+    - "destination"
+    properties:
+      record_type:
+        type: "string"
+        description: "Recod's Type. 'S' for starting and 'E' for ending."
+        enum:
+        - "S"
+        - "E"
+      timestamp:
+        type: "string"
+        description: "Datetime of the record occurency."
+        example: "2017-12-12T15:07:13Z"
+      call_id:
+        type: "integer"
+        description: "Call record unique ID pair."
+      source:
+        type: "string"
+        description: "Source phone number. Should have 8 or 9 digits."
+        example: "123456789"
+      destination:
+        type: "string"
+        description: "Destination phone number. Should have 8 or 9 digits."
+        example: "987654321"
+  CallRecordResponse:
+    allOf:
+      - type: object
+        required:
+          - "id"
+        properties:
+          id:
+            type: "integer"
+            description: "Call Record identification"
+            example: 1
+      - $ref: "#/definitions/CallRecord"
+    
+  Bill:
+    type: "object"
+    required:
+    - "standing_charge"
+    - "minute_charge"
+    - "period"
+    - "subscriber"
+    - "total_price"
+    - "description"
+    properties:
+      standing_charge:
+        type: "number"
+        description: "Call standing charge."
+        example: 0.36
+      minute_charge:
+        type: "number"
+        description: "Call minute charge."
+        example: 0.09
+      subscriber:
+        type: "string"
+        example: "12345678"
+        description: "Bill's subscriber"
+      period:
+        type: "string"
+        description: "Period of this bill"
+      total_price:
+        type: "number"
+        description: "Total value of this bill."
+        example: 5.89
+      description:
+        type: "string"
+        example: "Call1 from XYZ to ZYX"
+        description: "Descritive of all charged call records."
