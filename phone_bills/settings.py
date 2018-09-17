@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'n_8#h(n8&+=q54%w8_95$0bz=0$yi(kaexc__ok6$qo4#^lp3h'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', True)
+DEBUG = os.environ.get('DEBUG', False)
 
 ALLOWED_HOSTS = ['phonecall-elyssonmr.herokuapp.com']
 
